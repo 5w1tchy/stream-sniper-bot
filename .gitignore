@@ -30,7 +30,7 @@ pip-log.txt
 data/live_cache.json
 
 # Secrets
-config.py  # Only if you ever add secrets directly in here (you currently don’t)
+config.py
 
 # Test files (optional)
 test_*.py

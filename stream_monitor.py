@@ -3,10 +3,10 @@ import asyncio
 
 import discord
 from discord.ext import tasks
-from live_cache import LiveCache
 
 import config
 from twitch_api import TwitchAPI
+from utils.live_cache import LiveCache
 
 bot = None  # Will be injected in main.py
 
@@ -53,8 +53,15 @@ async def check_streams():
                 await post_stream(username, title, thumb, channel_id)
             else:
                 cached = cache.get_message_info(username)
-                if cached["title"] != title:
-                    await update_stream(username, title, channel_id)
+                if cached:
+                    print(f"[Check] Cached title: {cached['title']}")
+                    print(f"[Check] Current title: {title}")
+                    if cached["title"] != title:
+                        print(
+                            f"[UPDATE TRIGGERED] {username} - Title has changed")
+                        await update_stream(username, title, channel_id)
+                    else:
+                        print(f"[NO UPDATE] {username} - Title unchanged")
         else:
             if cache.is_live(username):
                 cache.increment_miss(username)
@@ -68,13 +75,16 @@ async def post_stream(username, title, thumb_url, channel_id):
         print(f"Could not find channel: {channel_id}")
         return
 
+    preview_url = thumb_url.replace(
+        "{width}", "1280").replace("{height}", "720")
+
     embed = discord.Embed(
         title=title,
         url=f"https://twitch.tv/{username}",
-        description=f"**{username}** is now live!",
+        description=f"🔴 **{username}** is now live!",
         color=0x9146FF
     )
-    embed.set_thumbnail(url=thumb_url)
+    embed.set_image(url=preview_url)
 
     msg = await channel.send(embed=embed)
     cache.add_stream(username, msg.id, channel_id, title)
@@ -95,9 +105,15 @@ async def update_stream(username, new_title, channel_id):
         embed = discord.Embed(
             title=new_title,
             url=f"https://twitch.tv/{username}",
-            description=f"🔁 Title updated!",
+            description=f"🔁 **{username}** updated their stream title!",
             color=0x9146FF
         )
+
+        # Get a fresh preview thumbnail
+        stream_data = await twitch_api.get_live_streams([username])
+        if stream_data:
+            thumb = stream_data[0]["thumbnail_url"]
+            embed.set_thumbnail(url=thumb)
         new_msg = await channel.send(embed=embed)
         await old_msg.delete()
         cache.update_title(username, new_title, new_msg.id)
