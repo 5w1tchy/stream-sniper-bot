@@ -101,21 +101,33 @@ async def update_stream(username, new_title, channel_id):
         return
 
     try:
+        # Fetch old message to delete
         old_msg = await channel.fetch_message(info["message_id"])
+
+        # Get fresh stream data (to grab updated thumbnail)
+        stream_data = await twitch_api.get_live_streams([username])
+        if not stream_data:
+            print(f"No live data found for {username} during update.")
+            return
+
+        stream = stream_data[0]
+        thumb = stream["thumbnail_url"].replace(
+            "{width}", "1280").replace("{height}", "720"
+                                       )
+
         embed = discord.Embed(
             title=new_title,
             url=f"https://twitch.tv/{username}",
             description=f"🔁 **{username}** updated their stream title!",
             color=0x9146FF
         )
+        embed.set_image(url=thumb)
 
-        # Get a fresh preview thumbnail
-        stream_data = await twitch_api.get_live_streams([username])
-        if stream_data:
-            thumb = stream_data[0]["thumbnail_url"]
-            embed.set_thumbnail(url=thumb)
+        # Send new embed message
         new_msg = await channel.send(embed=embed)
         await old_msg.delete()
+
+        # Update cache with new info
         cache.update_title(username, new_title, new_msg.id)
         print(f"Updated title for {username}")
     except Exception as e:
