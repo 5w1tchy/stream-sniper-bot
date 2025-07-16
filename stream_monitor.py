@@ -113,7 +113,7 @@ async def update_stream(username, new_title, channel_id):
         # Fetch old message to delete
         old_msg = await channel.fetch_message(info["message_id"])
 
-        # Get fresh stream data (to grab updated thumbnail)
+        # Get fresh stream data
         stream_data = await twitch_api.get_live_streams([username])
         if not stream_data:
             print(f"No live data found for {username} during update.")

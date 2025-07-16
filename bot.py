@@ -2,13 +2,13 @@
 import discord
 from discord.ext import commands
 
-import stream_monitor  # Import the full module, not just check_streams
+import stream_monitor
 from config import DISCORD_TOKEN
 
 intents = discord.Intents.default()
 intents.presences = True
 intents.members = True
-intents.message_content = True  # optional, but handy for commands
+intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
