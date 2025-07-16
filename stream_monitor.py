@@ -49,6 +49,15 @@ async def check_streams():
             title = stream_data["title"]
             thumb = stream_data["thumbnail_url"]
 
+            BAD_PREFIXES = ["RERUN", "HIGHLIGHTS"]
+            if any(title.strip().upper().startswith(bad) for bad in BAD_PREFIXES):
+                print(f"[SKIPPED] {username} → {title} (marked as not live)")
+                if cache.is_live(username):
+                    cache.increment_miss(username)
+                    if cache.should_cleanup(username):
+                        await delete_stream(username)
+                continue
+
             if not cache.is_live(username):
                 await post_stream(username, title, thumb, channel_id)
             else:
